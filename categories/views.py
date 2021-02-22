@@ -11,8 +11,7 @@ class CategoryViewSet(APIView):
             queryset = Category.objects.filter(parent_id=request.GET['parent_id'])
             serializer = CategorySerializer(queryset, many=True)
             return Response(serializer.data)
-        queryset = Category.objects.filter(parent_id=0)
-        print(queryset)
+        queryset = Category.objects.all()
         serializer = CategorySerializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -26,7 +25,7 @@ class CategoryViewSet(APIView):
                     getsib(item, parent_id)
             return True
 
-        response=True
+        response=getsib(request.data,parent_id=0)
         serializer = CategorySerializer(data=request.data)
         if response:
             return Response({"msg":"Added Sucessfully"}, status=status.HTTP_201_CREATED)
@@ -35,9 +34,14 @@ class DetialView(APIView):
     def get(self,request,pk):
         obj=Category.objects.get(id=pk)
         data=Category.objects.filter(parent_id=obj.id)
+        sib=Category.objects.filter(parent_id__in=data)
+        parent=Category.objects.filter(id=obj.parent_id)[0]
         serializer = CategorySerializer(data,many=True)
+        serializer1 = CategorySerializer(sib,many=True)
         response={}
         response['name']=obj.name
+        response['parent']={"id":parent.id,"name":parent.name}
         response['children']=serializer.data
+        response['siblings']=serializer1.data
 
         return Response(response)
